@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Monochromatic gray scale */
+    --background: 0 0% 95%;
+    --foreground: 0 0% 20%;
+
+    --card: 0 0% 97%;
+    --card-foreground: 0 0% 20%;
+
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 40%;
+
+    --primary: 0 0% 20%;
+    --primary-foreground: 0 0% 95%;
+
+    --border: 0 0% 92%;
+    --ring: 0 0% 20%;
+
+    --radius: 1rem;
+  }
+
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 85%;
+
+    --card: 0 0% 12%;
+    --card-foreground: 0 0% 85%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --primary: 0 0% 85%;
+    --primary-foreground: 0 0% 10%;
+
+    --border: 0 0% 15%;
+    --ring: 0 0% 80%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+
+  /* Refined typography */
+  h1,
+  h2,
+  h3,
+  h4,
+  p {
+    @apply text-sm font-light;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-gradient-to-b from-muted/50 to-card/50 backdrop-blur-xl;
+  }
+
+  .subtle-shadow {
+    @apply shadow-[0_8px_16px_rgb(0,0,0,0.03)];
+  }
+
+  .input-minimal {
+    @apply bg-transparent border-0 border-b border-border/50 rounded-none px-0 
+           focus:ring-0 focus:border-foreground/20 transition-colors;
+  }
+}
+
