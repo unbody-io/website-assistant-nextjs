@@ -15,7 +15,7 @@ pageEnhancementPipeline.add(
             - which category does this page belong to?
             ---
             all available categories:
-            ${JSON.stringify(pageCategories)}
+            ${JSON.stringify(ctx.vars.categories)}
             ---
             Page content:
             ${ctx.record.text} 
