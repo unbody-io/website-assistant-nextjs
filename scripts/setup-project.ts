@@ -49,9 +49,6 @@ export const run = async () => {
             throw new Error(`Missing environment variable: ${requirement}`);
         }
     }
-
-    return null;
-
     const admin = new UnbodyAdmin({
         auth: {
             username: process.env.UNBODY_ADMIN_ID,
@@ -77,6 +74,7 @@ export const run = async () => {
             console.log(JSON.stringify(e.response.data, null, 2))
             throw e;
         })
+
     console.log("Project created with ID:", project.id)
 
     const source = await project.sources.ref({
