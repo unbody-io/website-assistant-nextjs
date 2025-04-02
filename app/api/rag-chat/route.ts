@@ -12,6 +12,7 @@ type ParsedQueryAdditional = {
 
 // Simulated Unbody API
 const api = {
+
   understand: async (query: string, siteMetadata: SiteMetadata) => {
     const parsedQuery = await parseQuery<ParsedQueryAdditional>({
       query,
@@ -21,15 +22,15 @@ const api = {
       }),
       guide: `
       You are an agent (query parser) as part of a larger RAG pipeline. 
-      This pipline is used to answer questions or search for information on a website of a software development company: 
+      This pipeline is used to answer questions or search for information on a website of a software development company: 
       ${siteMetadata.xSummary}
       `,
     })
+    console.log(parsedQuery)
     return parsedQuery
   },
 
   search: async (query: ParsedQuery<any>): Promise<{webpages: ExtendedWebPage[], images: IImageBlock[]}> => {
-
     const {data: {payload: pages}} = await unbody.get
       .collection<ExtendedWebPage>("WebPage")
       .search.about(query.query, {
@@ -69,6 +70,7 @@ const api = {
   think: async (query: ParsedQuery<any>, searchResults: ExtendedWebPage[], siteMetadata: SiteMetadata) => {
     console.log("think", query, searchResults, siteMetadata)
     const {
+      // @ts-ignore
       data: {
         payload: { content },
       },
@@ -80,7 +82,7 @@ const api = {
         },
         {
           role: 'system',
-          content: `Here are the relavant pages we've found: ${searchResults.map((page) => `${page.title}/n${page.text}/n${page.url}`).join("---/n/n---")}`,
+          content: `Here are the relevant pages we've found: ${searchResults.map((page) => `${page.title}/n${page.text}/n${page.url}`).join("---/n/n---")}`,
         },
         {
           role: 'system',
@@ -118,7 +120,7 @@ export async function POST(req: Request) {
         const sendEvent = (event: string, data: any) => {
           controller.enqueue(new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`))
         }
-        
+
         // Step 1: Understanding
         sendEvent("status", {
           key: "understanding",
@@ -128,7 +130,7 @@ export async function POST(req: Request) {
         })
 
         const parsedQuery = await api.understand(query, siteMetadata)
-      
+
         sendEvent("query-parser", parsedQuery)
 
         sendEvent("status", {
