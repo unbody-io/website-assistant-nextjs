@@ -10,9 +10,20 @@ import appContextPipeline from "@/scripts/enhancements/website.enhancer";
 import pageEnhancementPipeline from "@/scripts/enhancements/webpage.enhancer";
 import extendedWebPageSchema from "@/scripts/enhancements/webpage.xschema";
 import extendedWebsiteSchema from "@/scripts/enhancements/website.xschema";
+import extendedImageSchema from "@/scripts/enhancements/image.xschema";
+
+if(!process.env.UNBODY_ADMIN_ID || !process.env.UNBODY_ADMIN_SECRET) {
+    throw new Error("UNBODY_ADMIN_ID and UNBODY_ADMIN_SECRET must be set")
+}
+
+const admin = new UnbodyAdmin({
+    auth: {
+        username: process.env.UNBODY_ADMIN_ID,
+        password: process.env.UNBODY_ADMIN_SECRET,
+    },
+});
 
 const settings = new ProjectSettings()
-
 settings
     .set(new TextVectorizer(TextVectorizer.OpenAI.TextEmbedding3Large))
     .set(new Generative(Generative.OpenAI.GPT4o))
@@ -24,7 +35,8 @@ settings
 settings.set(
     new CustomSchema().extend(
         extendedWebsiteSchema,
-        extendedWebPageSchema
+        extendedWebPageSchema,
+        extendedImageSchema
     )
 );
 
@@ -39,9 +51,7 @@ settings.set(
 export const run = async () => {
     const requirements = [
         'UNBODY_ADMIN_ID',
-        'UNBODY_ADMIN_SECRET',
-        'WEBSITE_NAME',
-        'WEBSITE_URL',
+        'UNBODY_ADMIN_SECRET'
     ];
 
     for (const requirement of requirements) {
@@ -49,51 +59,22 @@ export const run = async () => {
             throw new Error(`Missing environment variable: ${requirement}`);
         }
     }
-    const admin = new UnbodyAdmin({
-        auth: {
-            username: process.env.UNBODY_ADMIN_ID,
-            password: process.env.UNBODY_ADMIN_SECRET,
-        },
-    });
 
-    // const existingProjects = await admin.projects.list({
-    //     filter: {
-    //         name: process.env.WEBSITE_NAME + ' project'
-    //     }
-    // })
-    //
-    // for(const project of existingProjects.projects) {
-    //     await admin.projects.delete({id: project.id});
-    //     console.log("Deleted project:", project.name);
-    // }
+    try{
+        const project = await admin.projects
+                                    .ref({name: "companies_website", settings})
+                                    .save()
 
-    const project = await admin.projects
-        .ref({name: `${process.env.WEBSITE_NAME} project testing`, settings})
-        .save()
-        .catch((e) => {
-            console.log(JSON.stringify(e.response.data, null, 2))
-            throw e;
-        })
+        // Create a push api source for custom data (e.g; avatar, etc)
+        await project.sources.ref({
+            name: "cutsom-data",
+            type: SourceTypes.PushApi,
+        }).save()
 
-    console.log("Project created with ID:", project.id)
+        console.log(`Project ${project.name} created successfully`)
+        console.log("https://app.unbody.io/projects/" + project.id);
+    } catch (error: any) {
+        console.log(JSON.stringify(error.response?.data))
+    }
 
-    const source = await project.sources.ref({
-        name: process.env.WEBSITE_NAME,
-        type: SourceTypes.WebCrawler
-    }).save()
-    console.log("Source created with ID:", source.id)
-
-    await source.setEntrypoint({
-        entrypoint: {
-            url: process.env.WEBSITE_URL,
-            maxDepth: 2,
-            maxPages: 10,
-            jsEnabled: false
-        },
-    })
-    console.log("Entrypoint set: ", process.env.WEBSITE_URL)
-
-    await source.initialize();
-    console.log("Initializing source... (this may take a few minutes) Check the dashboard for progress.")
-    console.log("https://app.unbody.io/projects/" + project.id + "/sources/" + source.id);
 }

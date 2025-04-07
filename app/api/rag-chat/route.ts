@@ -3,6 +3,7 @@ import { ParsedQuery, parseQuery } from "@/lib/unbody/unbody.utils"
 import { ExtendedWebPage } from "@/types/data.types"
 import { SiteMetadata } from "@/types/site.metadata"
 import { IImageBlock } from "unbody"
+import { Source } from "unbody/admin"
 import { z } from "zod"
 
 type ParsedQueryAdditional = {
@@ -30,7 +31,7 @@ const api = {
     return parsedQuery
   },
 
-  search: async (query: ParsedQuery<any>): Promise<{webpages: ExtendedWebPage[], images: IImageBlock[]}> => {
+  search: async (query: ParsedQuery<any>, source: Source): Promise<{webpages: ExtendedWebPage[], images: IImageBlock[]}> => {
     const {data: {payload: pages}} = await unbody.get
       .collection<ExtendedWebPage>("WebPage")
       .search.about(query.query, {
@@ -38,6 +39,9 @@ const api = {
           concepts: query.concepts || [query.query],
           force: 0.6
         },
+      })
+      .where({
+        sourceId: source.id
       })
       .select(
         "title", "url", "description", "xCategory", "__typename",
@@ -56,6 +60,9 @@ const api = {
         },
         // certainty: 0.75,
       })
+      .where({
+        sourceId: source.id
+      })
       .select("url", "autoCaption", "autoOCR", "__typename")
       .autocut(3)
       .limit(3)
@@ -67,7 +74,7 @@ const api = {
     }
   },
 
-  think: async (query: ParsedQuery<any>, searchResults: ExtendedWebPage[], siteMetadata: SiteMetadata) => {
+  think: async (query: ParsedQuery<any>, searchResults: ExtendedWebPage[], siteMetadata: SiteMetadata, source: Source) => {
     console.log("think", query, searchResults, siteMetadata)
     const {
       // @ts-ignore
@@ -111,7 +118,7 @@ const api = {
 
 
 export async function POST(req: Request) {
-  const { query, siteMetadata } = await req.json()
+  const { query, siteMetadata, source } = await req.json()
   // Create a stream
   const stream = new ReadableStream({
     async start(controller) {
@@ -148,7 +155,7 @@ export async function POST(req: Request) {
           label: "Searching for relevant information...",
         })
 
-        const searchResult = await api.search(parsedQuery)
+        const searchResult = await api.search(parsedQuery, source)
 
         sendEvent("status", {
           key: "searching",
@@ -170,7 +177,7 @@ export async function POST(req: Request) {
           label: "Generating response...",
         })
 
-        const thinkResult = await api.think(parsedQuery, searchResult.webpages, siteMetadata)
+        const thinkResult = await api.think(parsedQuery, searchResult.webpages, siteMetadata, source)
         sendEvent("status", {
           key: "thinking",
           isBusy: false,

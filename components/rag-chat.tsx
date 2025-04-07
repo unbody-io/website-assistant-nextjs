@@ -9,13 +9,15 @@ import { ChatInput } from "./chat/chat-input"
 import { ChatMessages } from "./chat/chat-messages"
 import { SuggestedQuestions } from "./chat/suggested-questions"
 import { shuffleArray } from "@/lib/utils"
+import { Source } from "unbody/admin"
 
 interface RagChatProps {
   siteMetadata: SiteMetadata
+  source: Source
 }
 
-export function RagChat({ siteMetadata }: RagChatProps) {
-  const rag = useRag(siteMetadata)
+export function RagChat({ siteMetadata, source }: RagChatProps) {
+  const rag = useRag(siteMetadata, source)
   const { state, sendMessage, setInput, clearThread, isInitialState } = useThread({ rag })
 
   const initialSuggestedQuestions = useMemo(() => {

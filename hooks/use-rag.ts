@@ -5,6 +5,7 @@ import type { SiteMetadata } from "@/types/site.metadata"
 import type { ParsedQuery } from "@/lib/unbody/unbody.utils"
 import type { ExtendedWebPage } from "@/types/data.types"
 import type { IImageBlock } from "unbody"
+import { Source } from "unbody/admin"
 
 export interface StatusState {
   isBusy: boolean
@@ -49,7 +50,7 @@ const initialState: RagState = {
   timestamp: Date.now()
 }
 
-export function useRag(siteMetadata: SiteMetadata) {
+export function useRag(siteMetadata: SiteMetadata, source: Source) {
   const [state, setState] = useState<RagState>(initialState)
 
   const reset = useCallback(() => {
@@ -74,7 +75,7 @@ export function useRag(siteMetadata: SiteMetadata) {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ query, siteMetadata }),
+          body: JSON.stringify({ query, siteMetadata, source }),
         })
 
         if (!response.ok || !response.body) {
