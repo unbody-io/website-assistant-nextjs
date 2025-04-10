@@ -7,7 +7,7 @@ import { AppLogo } from "./gray-logo"
 import { GenerativeAnswer } from "./gen-response"
 import { MiniStatusIndicator } from "./status-indicator"
 import type { AssistantMessage as AssistantMessageType } from "@/types/message"
-import { useMemo } from "react"
+import { useWebsiteData } from "@/app/context/WebsiteDataContext"
 interface AssistantMessageProps {
   data: AssistantMessageType
   isPast: boolean
@@ -19,6 +19,7 @@ export function AssistantMessage({
   isPast,
   onFollowupSelect,
 }: AssistantMessageProps) {
+  const { siteMetadata } = useWebsiteData()
   return (
     <div className="w-full">
       <div className="flex gap-2 sm:gap-3">
@@ -29,7 +30,8 @@ export function AssistantMessage({
               data.content.status.thinking.isBusy ||
               data.content.status.searching.isBusy ||
               data.content.status.understanding.isBusy
-            } 
+            }
+            logo={siteMetadata?.logo || undefined}
           />
         </div>
         <div className="flex-1 min-w-0">

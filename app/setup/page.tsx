@@ -26,15 +26,7 @@ const formSchema = z.object({
     .min(3, "Name must be at least 3 characters")
     .max(50, "Name must be less than 50 characters")
     .regex(/^[a-z0-9_]+$/, "Name can only contain lowercase letters, numbers, and underscores")
-    .transform((val) => val.toLowerCase()),
-  file: z
-    .instanceof(FileList)
-    .refine((files) => files.length > 0, "Image is required")
-    .refine(
-      (files) => files[0]?.type.startsWith("image/"),
-      "File must be an image"
-    )
-    .refine((files) => files[0]?.size <= 5000000, "Image must be less than 5MB"),
+    .transform((val) => val.toLowerCase())
 })
 
 type FormValues = z.infer<typeof formSchema>
@@ -44,6 +36,7 @@ export default function SetupPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isCreating, setIsCreating] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const { toast } = useToast()
 
   const form = useForm<FormValues>({
@@ -104,61 +97,76 @@ export default function SetupPage() {
   }
 
   const onSubmit = async (data: FormValues) => {
-    setIsCreating(true)
+    if (!selectedFile) {
+      toast({ title: "Error", description: "Image is required", variant: "destructive" });
+      return;
+    }
+
+    if (!selectedFile.type.startsWith("image/")) {
+      toast({ title: "Error", description: "File must be an image", variant: "destructive" });
+      return;
+    }
+
+    if (selectedFile.size > 5000000) {
+      toast({ title: "Error", description: "Image must be less than 5MB", variant: "destructive" });
+      return;
+    }
+
+    setIsCreating(true);
     try {
-      const formData = new FormData()
-      formData.append("name", data.name)
-      formData.append("url", data.url)
-      formData.append("file", data.file[0])
+      const formData = new FormData();
+      formData.append("name", data.name);
+      formData.append("url", data.url);
+      formData.append("file", selectedFile);
 
       const response = await fetch("/api/sources", {
         method: "POST",
         body: formData,
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (!response.ok) {
         if (response.status === 401) {
-          setIsAuthenticated(false)
-          throw new Error("Authentication required")
+          setIsAuthenticated(false);
+          throw new Error("Authentication required");
         }
         if (response.status === 400) {
-          // Handle validation errors from the server
-          const errors = result.details || []
+          const errors = result.details || [];
           errors.forEach((error: any) => {
             form.setError(error.path[0] as keyof FormValues, {
               type: "server",
               message: error.message,
-            })
-          })
+            });
+          });
           toast({
             title: "Validation Error",
             description: "Please check the form for errors.",
             variant: "destructive",
-          })
+          });
         } else {
-          throw new Error(result.error || "Failed to create source")
+          throw new Error(result.error || "Failed to create source");
         }
       } else {
-        form.reset()
-        fetchSources()
+        form.reset();
+        setSelectedFile(null);
+        fetchSources();
         toast({
           title: "Success",
           description: "Source created successfully!",
-        })
+        });
       }
     } catch (error) {
-      console.error("Error creating source:", error)
+      console.error("Error creating source:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create source",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsCreating(false)
+      setIsCreating(false);
     }
-  }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -214,43 +222,36 @@ export default function SetupPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="file"
-                render={({ field: { onChange, value, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Source Image</FormLabel>
-                    <FormControl>
-                      <div className="flex items-center gap-4">
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => onChange(e.target.files)}
-                          {...field}
+              <FormItem>
+                <FormLabel>Source Image</FormLabel>
+                <FormControl>
+                  <div className="flex items-center gap-4">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    />
+                    {selectedFile && (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={URL.createObjectURL(selectedFile)}
+                          alt="Preview"
+                          className="w-10 h-10 object-cover rounded"
                         />
-                        {value && value[0] && (
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={URL.createObjectURL(value[0])}
-                              alt="Preview"
-                              className="w-10 h-10 object-cover rounded"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => onChange(null)}
-                            >
-                              ×
-                            </Button>
-                          </div>
-                        )}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setSelectedFile(null)}
+                        >
+                          ×
+                        </Button>
                       </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                    )}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
               <Button type="submit" disabled={isCreating}>
                 {isCreating ? (
                   <>

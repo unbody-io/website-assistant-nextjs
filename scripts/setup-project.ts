@@ -66,13 +66,16 @@ export const run = async () => {
                                     .save()
 
         // Create a push api source for custom data (e.g; avatar, etc)
-        await project.sources.ref({
+        const source = await project.sources.ref({
             name: "cutsom-data",
             type: SourceTypes.PushApi,
         }).save()
 
+        await source.initialize()
+
         console.log(`Project ${project.name} created successfully`)
         console.log("https://app.unbody.io/projects/" + project.id);
+        console.log("https://app.unbody.io/sources/" + source.id);
     } catch (error: any) {
         console.log(JSON.stringify(error.response?.data))
     }

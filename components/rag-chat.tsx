@@ -10,13 +10,23 @@ import { ChatMessages } from "./chat/chat-messages"
 import { SuggestedQuestions } from "./chat/suggested-questions"
 import { shuffleArray } from "@/lib/utils"
 import { Source } from "unbody/admin"
+import { AppLogo } from "./chat/gray-logo"
+import { useWebsiteData } from "@/app/context/WebsiteDataContext"
 
 interface RagChatProps {
-  siteMetadata: SiteMetadata
-  source: Source
 }
 
-export function RagChat({ siteMetadata, source }: RagChatProps) {
+const cleanUrl = (url: string) => {
+  return url.replace(/^https?:\/\//, "").replace(/\/$/, "")
+}
+
+export function RagChat({ }: RagChatProps) {
+  const { siteMetadata, source } = useWebsiteData()
+
+  if (!siteMetadata || !source) {
+    return null
+  }
+
   const rag = useRag(siteMetadata, source)
   const { state, sendMessage, setInput, clearThread, isInitialState } = useThread({ rag })
 
@@ -48,6 +58,10 @@ export function RagChat({ siteMetadata, source }: RagChatProps) {
             className="flex-1 flex items-center justify-center p-4"
           >
             <div className="w-full max-w-md glass-panel subtle-shadow rounded-2xl p-4">
+              <div className="flex items-center justify-center mb-6">
+                <img src={siteMetadata.logo?.url as string} alt="Logo" className="w-10 h-auto rounded-full" />  
+                <span className="text-sm font-medium">{cleanUrl(source.custom.entrypoint.url)}</span>
+              </div>
               <h1 className="text-center text-sm font-medium mb-6">
                 How can I help you today?
               </h1>

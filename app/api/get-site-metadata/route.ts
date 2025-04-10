@@ -1,5 +1,6 @@
 import { unbody } from "@/lib/unbody";
 import { project } from "@/lib/unbody/project"
+import { ExtendedImageBlock } from "@/types/data.types";
 import { SiteMetadata } from "@/types/site.metadata";
 import { NextResponse } from "next/server"
 import { UnbodyAdmin } from "unbody/admin"
@@ -10,7 +11,6 @@ const admin = new UnbodyAdmin({
       password: process.env.UNBODY_ADMIN_SECRET,
   },
 });
-
 
 export async function POST(request: Request) {
   try {
@@ -54,6 +54,21 @@ export async function POST(request: Request) {
                 .select("xSummary", "title", "description", "url", "xClients", "xIndustries", "xFaQ")
                 .exec()
 
+    const {data: {payload: logo}} = await unbody.get
+                .collection<ExtendedImageBlock>("ImageBlock")
+                .where(({And}) => {
+                  return And(
+                    {
+                      xLabel: "logo",
+                    },
+                    {
+                      xWebsiteName: source_name
+                    }
+                  )
+                })
+                .select("url")
+                .exec()
+
     if(!payload || payload.length === 0) {
       return NextResponse.json(
         { error: "No site metadata found" },
@@ -63,7 +78,10 @@ export async function POST(request: Request) {
     
 
     return NextResponse.json({
-      siteMetadata: payload[0] as SiteMetadata,
+      siteMetadata: {
+        ...payload[0] as SiteMetadata,
+        logo: logo[0] as ExtendedImageBlock | null
+      },
       source,
     })
   } catch (error) {

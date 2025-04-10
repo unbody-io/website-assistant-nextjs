@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 import { UnbodyAdmin, Source } from "unbody/admin"
 import { UnbodyPushAPI } from "unbody/push"
+import { AxiosError, toFormData } from "axios"
+import { v4 as uuidv4 } from 'uuid';
 
 const formSchema = z.object({
   url: z.string().url("Please enter a valid URL"),
@@ -29,9 +31,11 @@ export async function GET() {
     if(!project) {
       throw new Error("Project not found")
     }
-
     const sources = await project.sources.list({})
-    return NextResponse.json(sources.sources)
+
+    return NextResponse.json(
+      sources.sources.filter((source) => source.type === "web_crawler")
+    )
   } catch (error) {
     console.error("Error fetching sources:", error)
     return NextResponse.json(
@@ -57,9 +61,7 @@ export async function POST(request: Request) {
     const url = formData.get("url") as string
     const file = formData.get("file") as File
 
-    // Validate form data
     const validatedData = formSchema.parse({ name, url })
-
 
     // Validate file
     if (!file) {
@@ -100,7 +102,6 @@ export async function POST(request: Request) {
 
     await websiteSource.initialize()
 
-    
     const push = new UnbodyPushAPI({
       auth: {
           apiKey: process.env.UNBODY_API_KEY as string,
@@ -109,20 +110,40 @@ export async function POST(request: Request) {
       sourceId: process.env.UNBODY_CUSTOM_DATA_SOURCE_ID as string,
   })
 
-    await push.files.upload({form: formData})
-    return NextResponse.json(websiteSource)
+    const form = toFormData({})
+    form.append('id', uuidv4()) 
+    form.append('payload', JSON.stringify({
+      xLabel: "logo",
+      xWebsiteName: validatedData.name,
+    }))
+    form.append('file', Buffer.from(await file.arrayBuffer()), file.name)
+
+    await push.files.upload({form})
+    await project.sources.ref({id: process.env.UNBODY_CUSTOM_DATA_SOURCE_ID, type: "push_api"}).update()
     
-  } catch (error) {
-    console.error("Error creating source:", error)
+    // return NextResponse.json(websiteSource)
+    return NextResponse.json({
+      message: "Source created successfully"
+    })
+
+  } catch (error: any) {
+    
+    if (error.response)   console.error(JSON.stringify(error.response.data, null, 2))
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Validation failed", details: error.errors },
         { status: 400 }
       )
     }
+
+    if (error instanceof AxiosError && !!error.response)
+      console.error(error.status, error.response.data)
+    else console.error(error)
+
     return NextResponse.json(
       { error: "Failed to create source" },
       { status: 500 }
     )
   }
-} 
+}
