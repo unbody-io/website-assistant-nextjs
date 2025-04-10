@@ -15,7 +15,7 @@ export function ChatMessage({ message, onFollowupSelect, isPast }: ChatMessagePr
     <div className="space-y-4">
       {isUserMessage(message) ? (
         <div className="chat-message w-full flex justify-end">
-          <p className="text-xs bg-primary text-gray-100 p-2 rounded-md">{message.content}</p>
+          <p className="text-primary-foreground bg-primary p-2 rounded-md text-sm">{message.content}</p>
         </div>
       ) : (
         <AssistantMessage
