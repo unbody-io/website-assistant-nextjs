@@ -17,7 +17,8 @@ interface RagChatProps {
 }
 
 const cleanUrl = (url: string) => {
-  return url.replace(/^https?:\/\//, "").replace(/\/$/, "")
+  return url;
+  // return url.replace(/^https?:\/\//, "").replace(/\/$/, "")
 }
 
 export function RagChat({ }: RagChatProps) {
@@ -31,7 +32,7 @@ export function RagChat({ }: RagChatProps) {
   const { state, sendMessage, setInput, clearThread, isInitialState } = useThread({ rag })
 
   const initialSuggestedQuestions = useMemo(() => {
-    const faqs = siteMetadata.xFaQ.split("\n\n");
+    const faqs = (siteMetadata.xFaQ || "").split("\n\n");
     const qs = faqs.map((faq) => faq.split("\n")[0])
     return shuffleArray(qs.slice(0, 3))
   }, [siteMetadata.xFaQ])
@@ -59,7 +60,7 @@ export function RagChat({ }: RagChatProps) {
           >
             <div className="w-full max-w-md glass-panel subtle-shadow rounded-2xl p-4">
               <div className="flex items-center justify-center mb-6">
-                <img src={siteMetadata.logo?.url as string} alt="Logo" className="w-10 h-auto rounded-full" />  
+                <img src={siteMetadata.logo?.url as string} alt="Logo" className="w-10 h-auto rounded-full" />
                 <span className="text-sm font-medium">{cleanUrl(source.custom.entrypoint.url)}</span>
               </div>
               <h1 className="text-center text-sm font-medium mb-6">

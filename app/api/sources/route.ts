@@ -37,7 +37,7 @@ export async function GET() {
       sources.sources.filter((source) => source.type === "web_crawler")
     )
   } catch (error) {
-    console.error("Error fetching sources:", error)
+    console.error("Error fetching sources:", error.response)
     return NextResponse.json(
       { error: "Failed to fetch sources" },
       { status: 500 }
@@ -111,7 +111,7 @@ export async function POST(request: Request) {
   })
 
     const form = toFormData({})
-    form.append('id', uuidv4()) 
+    form.append('id', uuidv4())
     form.append('payload', JSON.stringify({
       xLabel: "logo",
       xWebsiteName: validatedData.name,
@@ -120,14 +120,14 @@ export async function POST(request: Request) {
 
     await push.files.upload({form})
     await project.sources.ref({id: process.env.UNBODY_CUSTOM_DATA_SOURCE_ID, type: "push_api"}).update()
-    
+
     // return NextResponse.json(websiteSource)
     return NextResponse.json({
       message: "Source created successfully"
     })
 
   } catch (error: any) {
-    
+
     if (error.response)   console.error(JSON.stringify(error.response.data, null, 2))
 
     if (error instanceof z.ZodError) {
